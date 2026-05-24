@@ -1,0 +1,2 @@
+com.ansari.distributed_lovable.common_lib.error.SharedExceptionAutoConfiguration
+com.ansari.distributed_lovable.common_lib.security.SharedSecurityAutoConfiguration
