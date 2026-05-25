@@ -1,7 +1,7 @@
 package com.ansari.distributed_lovable.account_service.security;
 
+
 import com.ansari.distributed_lovable.common_lib.security.JwtAuthFilter;
-import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,8 +22,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 @EnableMethodSecurity
 public class AccountSecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
     private final HandlerExceptionResolver handlerExceptionResolver;
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -32,7 +32,7 @@ public class AccountSecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                         .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/auth/**","/webhooks/**").permitAll()
+                                .requestMatchers("/auth/**","/webhooks/**").permitAll()
                                 .anyRequest().authenticated()
                         )
 
