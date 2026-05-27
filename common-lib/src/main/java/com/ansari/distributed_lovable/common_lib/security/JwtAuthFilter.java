@@ -27,6 +27,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             log.info("incoming request: {}", request.getRequestURI());
 
+            log.info(
+                    "Auth header = {}",
+                    request.getHeader("Authorization"));
+
             final String requestHeaderToken = request.getHeader("Authorization");
 
             if (requestHeaderToken == null || !requestHeaderToken.startsWith("Bearer ")) {
@@ -43,6 +47,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         user.authorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
+            log.info(
+                    "Authentication after verify = {}",
+                    SecurityContextHolder.getContext().getAuthentication());
 
             filterChain.doFilter(request, response);
         } catch (Exception ex) {

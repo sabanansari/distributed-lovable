@@ -3,7 +3,6 @@ package com.ansari.distributed_lovable.account_service.controller;
 import com.ansari.distributed_lovable.account_service.dto.auth.AuthResponse;
 import com.ansari.distributed_lovable.account_service.dto.auth.LoginRequest;
 import com.ansari.distributed_lovable.account_service.dto.auth.SignupRequest;
-import com.ansari.distributed_lovable.account_service.dto.auth.UserProfileResponse;
 import com.ansari.distributed_lovable.account_service.service.AuthService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request){
-        return ResponseEntity.ok(authService.login(request));
+        AuthResponse authResponse = authService.login(request);
+        return ResponseEntity.ok(authResponse);
     }
 
 //    @GetMapping("/me")

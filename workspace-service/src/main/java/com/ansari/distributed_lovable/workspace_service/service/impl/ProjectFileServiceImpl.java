@@ -1,9 +1,9 @@
 package com.ansari.distributed_lovable.workspace_service.service.impl;
 
+import com.ansari.distributed_lovable.common_lib.dto.FileNode;
+import com.ansari.distributed_lovable.common_lib.dto.FileTreeDto;
 import com.ansari.distributed_lovable.common_lib.error.ResourceNotFoundException;
 import com.ansari.distributed_lovable.workspace_service.dto.project.FileContentResponse;
-import com.ansari.distributed_lovable.workspace_service.dto.project.FileNode;
-import com.ansari.distributed_lovable.workspace_service.dto.project.FileTreeResponse;
 import com.ansari.distributed_lovable.workspace_service.entity.Project;
 import com.ansari.distributed_lovable.workspace_service.entity.ProjectFile;
 import com.ansari.distributed_lovable.workspace_service.mapper.ProjectFileMapper;
@@ -41,12 +41,12 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     private String projectBucket;
 
     @Override
-    public FileTreeResponse getFileTree(Long projectId) {
+    public FileTreeDto getFileTree(Long projectId) {
 
         List<ProjectFile> projectFileList = projectFileRepository.findByProjectId(projectId);
 
         List<FileNode> fileNodes = projectFileMapper.toListOfFileNode(projectFileList);
-        return new FileTreeResponse(fileNodes);
+        return new FileTreeDto(fileNodes);
     }
 
 //    @Override
@@ -68,7 +68,7 @@ public class ProjectFileServiceImpl implements ProjectFileService {
 //    }
 
     @Override
-    public FileContentResponse getFileContent(Long projectId, String path) {
+    public String getFileContent(Long projectId, String path) {
 
         String cleanPath = path.startsWith("/") ? path.substring(1) : path;
         String objectName = projectId + "/" + cleanPath;
@@ -79,8 +79,8 @@ public class ProjectFileServiceImpl implements ProjectFileService {
                         .object(objectName)
                         .build())) {
 
-            String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            return new FileContentResponse(cleanPath, content);
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
 
         } catch (Exception e) {
             log.error("Failed to read file: {}/{}", projectId, cleanPath, e);

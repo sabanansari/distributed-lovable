@@ -1,8 +1,9 @@
-package com.ansari.distributed_lovable.workspace_service.dto.project;
+package com.ansari.distributed_lovable.common_lib.dto;
 
 public record FileNode(
         String path
 ) {
+
     @Override
     public String toString() {
         return path;

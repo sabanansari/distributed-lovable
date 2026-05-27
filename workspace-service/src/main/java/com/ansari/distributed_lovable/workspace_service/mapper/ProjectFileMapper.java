@@ -1,6 +1,6 @@
 package com.ansari.distributed_lovable.workspace_service.mapper;
 
-import com.ansari.distributed_lovable.workspace_service.dto.project.FileNode;
+import com.ansari.distributed_lovable.common_lib.dto.FileNode;
 import com.ansari.distributed_lovable.workspace_service.entity.ProjectFile;
 import org.mapstruct.Mapper;
 

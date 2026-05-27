@@ -56,10 +56,10 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
 
-        User user = (User) authentication.getPrincipal();
+        JwtUserPrincipal jwtUserPrincipal = (JwtUserPrincipal) authentication.getPrincipal();
 
-        JwtUserPrincipal jwtUserPrincipal = new JwtUserPrincipal(user.getId(),user.getName(), user.getUsername(), null,new ArrayList<>());
-
+//        JwtUserPrincipal jwtUserPrincipal = new JwtUserPrincipal(user.getId(),user.getName(), user.getUsername(), null,new ArrayList<>());
+//
 
         String token  = authUtil.generateAccessToken(jwtUserPrincipal);
 
