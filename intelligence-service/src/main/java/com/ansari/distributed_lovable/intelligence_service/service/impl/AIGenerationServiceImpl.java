@@ -1,7 +1,9 @@
 package com.ansari.distributed_lovable.intelligence_service.service.impl;
 
+import com.ansari.distributed_lovable.common_lib.enums.ChatEventStatus;
 import com.ansari.distributed_lovable.common_lib.enums.ChatEventType;
 import com.ansari.distributed_lovable.common_lib.enums.MessageRole;
+import com.ansari.distributed_lovable.common_lib.event.FileStoreRequestEvent;
 import com.ansari.distributed_lovable.common_lib.security.AuthUtil;
 import com.ansari.distributed_lovable.intelligence_service.client.WorkspaceClient;
 import com.ansari.distributed_lovable.intelligence_service.dto.chat.StreamResponse;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -29,6 +32,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -46,6 +50,7 @@ public class AIGenerationServiceImpl implements AIGenerationService {
     private final ChatEventRepository chatEventRepository;
     private final UsageService usageService;
     private final WorkspaceClient workspaceClient;
+    private final KafkaTemplate<String,Object> kafkaTemplate;
 
 
     private static final Pattern FILE_TAG_PATTERN = Pattern.compile("<file path=\"([^\"]+)\">(.*?)</file>",Pattern.DOTALL);
@@ -146,6 +151,7 @@ public class AIGenerationServiceImpl implements AIGenerationService {
 
         chatEventList.addFirst(ChatEvent.builder()
                         .type(ChatEventType.THOUGHT)
+                        .status(ChatEventStatus.CONFIRMED)
                         .content("Thought for "+duration+"s")
                         .chatMessage(assistantChatMessage)
                         .sequenceOrder(0)
@@ -153,8 +159,20 @@ public class AIGenerationServiceImpl implements AIGenerationService {
 
         chatEventList.stream()
                 .filter(e -> e.getType() == ChatEventType.FILE_EDIT)
-//                .forEach(
-//                        e -> projectFileService.saveFile(projectId,e.getFilePath(),e.getContent()))
+                .forEach(
+                        e->{
+                            String sagaId = UUID.randomUUID().toString();
+                            e.setSagaId(sagaId);
+                            FileStoreRequestEvent fileStoreRequestEvent = new FileStoreRequestEvent(
+                                    projectId, sagaId,
+                                    e.getFilePath().toString(),
+                                    e.getContent(),
+                                    userId
+                            );
+                            log.info("Sending FileStoreRequestEvent for projectId: {}, filePath: {}", projectId, e.getFilePath());
+                            kafkaTemplate.send("file-storage-request-event","project-"+projectId,fileStoreRequestEvent);
+                        }
+                )
         ;
 
         chatEventRepository.saveAll(chatEventList);
