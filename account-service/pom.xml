@@ -16,6 +16,7 @@
     <groupId>com.ansari.distributed-lovable</groupId>
     <artifactId>account-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <name>account-service</name>
 
     <properties>
         <java.version>21</java.version>
@@ -78,12 +79,7 @@
             <version>31.1.0</version>
         </dependency>
 
-        <!-- Common Library -->
-        <dependency>
-            <groupId>com.ansari.distributed-lovable</groupId>
-            <artifactId>common-lib</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+
 
         <!-- Lombok -->
         <dependency>
@@ -202,6 +198,28 @@
 
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.4</version>
+                <configuration>
+                    <to>
+                        <image>docker.io/ansarishaban777/lovable-${project.name}:${project.version}</image>
+                        <tags>
+                            <tag>latest</tag>
+                        </tags>
+                    </to>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>

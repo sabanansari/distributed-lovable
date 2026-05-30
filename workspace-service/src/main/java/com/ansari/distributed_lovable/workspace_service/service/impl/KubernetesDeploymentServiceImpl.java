@@ -8,6 +8,7 @@ import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -33,12 +34,26 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     private static final String RUNNER_CONTAINER = "runner";
     private static final String REVERSE_PROXY_PORT = "8090";
 
+    @Value("${app.preview.namespace}")
+    private String namespace;
+
+    @Value("${app.preview.domain}")
+    private String baseDomain;
+
+    @Value("${app.preview.proxy-port}")
+    private String proxyPort;
+
     @Override
     public DeployResponse deploy(Long projectId) {
 
         log.info("Received deployment request for project {}", projectId);
 
-        String domain = "project-" + projectId + ".app.domain.com";
+      //  String domain = "project-" + projectId + ".app.domain.com";
+
+        String domain = "project-"+projectId+"-"+baseDomain;
+
+        String formattedUrl = proxyPort.equals("80")
+                ? "http://" + domain : "http://" + domain + ":" + proxyPort;
 
         log.info("Checking for existing active pod for project {}", projectId);
 
@@ -48,17 +63,18 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
 
         if(existingPod != null){
             registerRoute(domain, existingPod);
-            return new DeployResponse("http://"+domain+":"+REVERSE_PROXY_PORT);
+//            return new DeployResponse("http://"+domain+":"+REVERSE_PROXY_PORT);
+            return new DeployResponse(formattedUrl);
         }
 
-        return claimAndStartNewPod(projectId, domain);
+        return claimAndStartNewPod(projectId, domain, formattedUrl);
     }
 
 
-    private DeployResponse claimAndStartNewPod(Long projectId, String domain) {
+    private DeployResponse claimAndStartNewPod(Long projectId, String domain,String formattedUrl) {
 
         log.info("Claiming new pod for project {}", projectId);
-        Pod pod = client.pods().inNamespace(NAMESPACE)
+        Pod pod = client.pods().inNamespace(namespace)
                 .withLabel(POOL_LABEL, IDLE)
                 .list()
                 .getItems()
@@ -69,7 +85,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         String podName = pod.getMetadata().getName();
         log.info("Claiming pod {} for project {}", podName, projectId);
 
-        client.pods().inNamespace(NAMESPACE)
+        client.pods().inNamespace(namespace)
                 .withName(podName)
                 .edit(p -> {
                     p.getMetadata().getLabels().put(POOL_LABEL, BUSY);
@@ -104,15 +120,18 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
             log.info("Starting application for pod {}: {}", podName, startCmd);
             execCommand(podName, RUNNER_CONTAINER, "sh", "-c", startCmd);
 
+            Pod updatedPod = client.pods().inNamespace(namespace).withName(podName).get();
+
             log.info("Deployment completed for project {} on pod {}. Accessible at http://{}:{}", projectId, podName, domain, REVERSE_PROXY_PORT);
 
-            registerRoute(domain, pod);
+            registerRoute(domain, updatedPod);
 
-            return new DeployResponse("http://"+domain+":"+REVERSE_PROXY_PORT);
+//            return new DeployResponse("http://"+domain+":"+REVERSE_PROXY_PORT);
+            return new DeployResponse(formattedUrl);
 
         }catch(Exception e){
             log.error("Failed to claim pod {} for project {}", podName, projectId, e);
-            client.pods().inNamespace(NAMESPACE).withName(podName).delete();
+            client.pods().inNamespace(namespace).withName(podName).delete();
             throw new RuntimeException("Failed to claim pod", e);
         }
 
@@ -157,7 +176,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
 
         CompletableFuture<String> data = new CompletableFuture<>();
 
-        try(ExecWatch ignored = client.pods().inNamespace(NAMESPACE)
+        try(ExecWatch ignored = client.pods().inNamespace(namespace)
                 .withName(podName)
                 .inContainer(container)
                 .writingOutput(new ByteArrayOutputStream())
@@ -184,7 +203,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     Optional<Pod> findActivePod(Long projectId){
 
         log.info("Searching for active pod for project {}", projectId);
-        return client.pods().inNamespace(NAMESPACE)
+        return client.pods().inNamespace(namespace)
                 .withLabel(POOL_LABEL, BUSY)
                 .withLabel(PROJECT_LABEL, projectId.toString())
                 .list()
